@@ -1,6 +1,8 @@
 import threading
 import socket
 
+import scripts.threadqueue as tq
+
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 clients = []
