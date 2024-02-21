@@ -1,12 +1,7 @@
 import threading
 import socket
 
-host = "127.0.0.1"
-port = 55555
-
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen()
 
 clients = []
 nicknames = []
@@ -39,7 +34,18 @@ def receive():
 
         client.send("NICK".encode('ascii'))
 
+        invalidflag = True
+
+        nickname = ""
+ 
         nickname = client.recv(1024).decode('ascii')
+        while invalidflag:
+            if nickname in nicknames:
+                client.send("INVALIDNICK".encode('ascii'))
+                nickname = client.recv(1024).decode('ascii')
+            else:
+                break
+
         nicknames.append(nickname)
         clients.append(client)
 
@@ -53,5 +59,21 @@ def receive():
 
 
 if __name__ == "__main__":
+    #hostname = socket.gethostname()
+    #host = socket.gethostbyname(hostname)
+
+    host = '127.0.0.1'
+
+    port = input("Type in the port that you would like to host this server on (default is 55555): ")
+    if (port == ""):
+        port = 55555
+    else:
+        port = int(port)
+
+    print(f"IP address of host server is {host}")
+    print(f"Server will be listening on port {port}")
+
+    server.bind((host, port))
+    server.listen()
     print("Server is up and listening...")
     receive()
