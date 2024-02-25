@@ -1,38 +1,82 @@
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, Qt, QTimer
 from PyQt5 import QtCore
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QCheckBox, QLineEdit, QGridLayout, QWidget, QLabel, QPushButton, QTextEdit
 
-import threadqueue as tq
+import threading
 
-import server as serv
-import client as clnt
+import scripts.threadqueue as tq
 
-import encrypted as ect
+import os
+
+import time
+
+import scripts.server as serv
+import scripts.client as clnt
+
+import scripts.encrypted as ect
 
 
 class ChatroomWindow(QWidget):
+
+    def displayText(self):
+        if self.textTQ.size > 0:
+            giventext = self.textDisplay.toPlainText()
+            giventext += f"\n{self.textTQ.pop()}"
+            self.textDisplay.setText(giventext)
+
+    def timerDisp(self):
+        self.timer = QTimer()
+        self.timer.setInterval(300)
+        self.timer.timeout.connect(self.displayText)
+        self.timer.start()
+
+    def sendText(self):
+        text = self.enterText.text()
+        self.sendTQ.push(text)
+        self.enterText.setText("")
 
     def __init__(self, data,parent=None):
         super().__init__(parent)
         self.sendTQ = tq.ThreadQueue()
         self.textTQ = tq.ThreadQueue()
+        self.signalSend = tq.ThreadQueue()
 
         self.textDisplay = QTextEdit()
         self.textDisplay.setReadOnly(True)
 
         self.ip = data[0]
-        self.port = data[1]
+        self.port = int(data[1])
         self.mode = data[2]
         self.type = data[3]
+        self.nickname = data[4]
 
         layout = QGridLayout()
         
         self.enterText = QLineEdit()
         self.enterText.setPlaceholderText("Enter text here...")
 
-    def displayText(self):
-        pass
+        self.enterText.returnPressed.connect(self.sendText)
 
+        layout.addWidget(self.textDisplay)
+        layout.addWidget(self.enterText)
+
+        self.setLayout(layout)
+
+        if self.type is True:
+            if self.mode is True:
+                self.chatthread = threading.Thread(target=serv.main, args=(self.port, self.textTQ, self.signalSend))
+            else:
+                self.chatthread = threading.Thread(target=clnt.main, args=(self.ip, self.port, self.nickname, self.textTQ, self.sendTQ))
+
+        self.timerDisp()
+        self.chatthread.start()
+
+    def closeEvent(self, event):
+        self.signalSend.push("End")
+        self.timer.stop()
+        time.sleep(1)
+        
 
 class MenuWindow(QMainWindow):
 
@@ -59,10 +103,8 @@ class MenuWindow(QMainWindow):
 
         self.chatroom = False
 
-        self.chatRoom.setCheckable(True)
         self.chatRoom.clicked.connect(self.ChatroomToggle)
-        self.encrypted.setCheckable(True)
-        self.chatRoom.clicked.connect(self.EncryptedToggle)
+        self.encrypted.clicked.connect(self.EncryptedToggle)
 
         self.hostCheckBox.toggled.connect(lambda:self.hostCheckState(self.hostCheckBox))
 
@@ -93,9 +135,18 @@ class MenuWindow(QMainWindow):
             self.ipEnter.setVisible(True)
 
     def showChatWindow(self):
-        self.chatroomWindow = ChatroomWindow((self.ipEnter.text(), self.portEnter.text(), self.hostCheckBox.isChecked(), self.chatroom))
+        self.chatroomWindow = ChatroomWindow((self.ipEnter.text(), self.portEnter.text(), self.hostCheckBox.isChecked(), self.chatroom, self.nicknameEnter.text()))
+        self.chatroomWindow.show()
 
-        
+    def EncryptedToggle(self):
+        if self.chatroom == True:
+            self.chatroom = False
+        self.showChatWindow()
 
-    def clicked(self):
-        print("Yes")
+    def ChatroomToggle(self):
+        if self.chatroom == False:
+            self.chatroom = True
+        self.showChatWindow()
+
+    def closeEvent(self, event):
+        os._exit(0)

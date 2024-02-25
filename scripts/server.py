@@ -1,5 +1,8 @@
 import threading
 import socket
+import os
+
+import psutil
 
 import scripts.threadqueue as tq
 
@@ -12,7 +15,7 @@ def broadcast(message: str):
     for client in clients:
         client.send(message)
 
-def handle(client):
+def handle(client, textq: tq.ThreadQueue):
     while True:
         try:
             message = client.recv(1024)
@@ -25,11 +28,12 @@ def handle(client):
             nickname = nicknames[index]
             leftstr = f"{nickname} has left the chat"
             print(leftstr)
+            textq.push(leftstr)
             broadcast(leftstr.encode('ascii'))
             nicknames.remove(nickname)
             break
 
-def receive():
+def receive(textq):
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
@@ -52,30 +56,40 @@ def receive():
         clients.append(client)
 
         print(f"Nickname of connected client is {nickname}")
+        textq.push(f"{nickname} has joined the chat!")
         broadcast(f"{nickname} has joined the chat!".encode('ascii'))
 
         client.send("Connected to the server".encode('ascii'))
 
-        thread = threading.Thread(target=handle, args=(client,))
+        thread = threading.Thread(target=handle, args=(client,textq))
         thread.start()
+            
 
 
-if __name__ == "__main__":
-    #hostname = socket.gethostname()
-    #host = socket.gethostbyname(hostname)
+def main(port, textq, signalSend):
+    hostname = socket.gethostname()
+    host = socket.gethostbyname(hostname)
 
-    host = '127.0.0.1'
-
-    port = input("Type in the port that you would like to host this server on (default is 55555): ")
-    if (port == ""):
-        port = 55555
-    else:
-        port = int(port)
+    for conn in psutil.net_connections(kind='inet'):
+        if conn.laddr.port == port:
+            textq.push("This port is already in use!!")
+            os._exit(0)
 
     print(f"IP address of host server is {host}")
+    textq.push(f"IP address of host server is {host}")
     print(f"Server will be listening on port {port}")
+    textq.push(f"Server will be listening on port {port}")
 
     server.bind((host, port))
     server.listen()
     print("Server is up and listening...")
-    receive()
+
+    recvthread = threading.Thread(target=receive, args=(textq,))
+    recvthread.start()
+
+    while True:
+
+        if signalSend.size > 0:
+            recvthread.join()
+            server.close()
+            os._exit(0)
