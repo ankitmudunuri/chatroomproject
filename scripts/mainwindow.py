@@ -68,6 +68,13 @@ class ChatroomWindow(QWidget):
                 self.chatthread = threading.Thread(target=serv.main, args=(self.port, self.textTQ, self.signalSend))
             else:
                 self.chatthread = threading.Thread(target=clnt.main, args=(self.ip, self.port, self.nickname, self.textTQ, self.sendTQ))
+        else:
+            if self.mode is True:
+                #self.chatthread = threading.Thread(target=encrypted.host, args=(self.port, self.textTQ, self.sendTQ))
+                pass
+            else:
+                #self.chatthread = threading.Thread(target=encrypted.client, args=(self.ip, self.port, self.textTQ, self.sendTQ))
+                pass
 
         self.timerDisp()
         self.chatthread.start()
