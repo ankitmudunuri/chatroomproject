@@ -9,7 +9,7 @@ To start using it, first go to your command line and navigate to the directory t
 The instructions below explain how to use this app.
 
 ### Chatroom
-- To host, toggle the host mode checkbox and enter the port number that you want to host on (404 is the default). Press the chatroom button after all of the information is filled out.
+- To host, toggle the host mode checkbox and enter the port number that you want to host on (1025 is the default). Press the chatroom button after all of the information is filled out.
 - To connect as a client, enter the target IP address of the server that you want to connect to, as well as the port number that the server is hosting on. Enter the nickname that you want to connect as, and make sure the host mode checkbox is not toggled, and then press the chatroom button.
 
 ### Encrypted 1-to-1 Chat

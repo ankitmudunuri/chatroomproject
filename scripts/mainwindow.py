@@ -48,12 +48,9 @@ class ChatroomWindow(QWidget):
         self.ip = data[0]
 
         try:
-            if self.port == "":
-                self.port = 404
-            else:
-                self.port = int(data[1])
+            self.port = int(data[1])
         except:
-            self.port = 404
+            self.port = 1025
 
         self.mode = data[2]
         self.type = data[3]
