@@ -46,7 +46,15 @@ class ChatroomWindow(QWidget):
         self.textDisplay.setReadOnly(True)
 
         self.ip = data[0]
-        self.port = int(data[1])
+
+        try:
+            if self.port == "":
+                self.port = 404
+            else:
+                self.port = int(data[1])
+        except:
+            self.port = 404
+
         self.mode = data[2]
         self.type = data[3]
         self.nickname = data[4]
